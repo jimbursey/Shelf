@@ -161,7 +161,8 @@ function detail(enc){ const prod=decodeURIComponent(enc); const b=best(prod); co
   let h=`<h3>${esc(prod)}</h3><div class="note">${esc(products().find(x=>x.p===prod).cat)}${per?' · compared per '+esc(per):''}</div>`;
   h+=`<div class="vhead">Current price by store</div>`;
   const sp=b.sp; let any=false;
-  for(const st of STORES){ if(sp[st]==null) continue; any=true; const isb=st===b.store;
+  const ord=STORES.filter(st=>sp[st]!=null).sort((x,y)=>sp[x]-sp[y]);
+  for(const st of ord){ any=true; const isb=st===b.store;
     h+=`<div class="rowline ${isb?'best':''}"><div>${esc(st)}${isb?'<span class="stamp">BEST</span>':''}</div><div></div><div class="mono">${fmt(sp[st])}/${esc(per)}</div></div>`; }
   if(!any) h+=`<div class="note">No priced entries yet.</div>`;
   // variants
