@@ -94,8 +94,10 @@ function up(r){ const u=UNITS[r.unit]; if(!u||!r.size||!r.price||r.price<=0) ret
 function baseOf(prod){ for(const r of ROWS){ if(r.p===prod && UNITS[r.unit]) return UNITS[r.unit][0]; } return ""; }
 function fmt(v){ if(v==null) return "–"; return "$"+(v<0.1?v.toFixed(3):v.toFixed(2)); }
 function esc(s){ return (s==null?"":(""+s)).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
-const STORES = (()=>{ const o=["Ralphs","Whole Foods","Amazon","Amazon Fresh","Trader Joe's","Costco","RC Farms","Target"]; const s=new Set(ROWS.map(r=>r.store)); s.forEach(x=>{if(!o.includes(x))o.push(x);}); return o.filter(x=>s.has(x)); })();
+const STORES = (()=>{ const o=["Whole Foods","Amazon Fresh","Trader Joe's","Amazon","RC Farms","Target","Ralphs","Costco"]; const s=new Set(ROWS.map(r=>r.store)); s.forEach(x=>{if(!o.includes(x))o.push(x);}); return o.filter(x=>s.has(x)); })();
 
+const CATORDER=["Fruit","Vegetables","Dairy","Frozen","Bakery","Deli","Meat","Pantry","Snacks","Sauces & Dips","Beverages","Herbs","Household","Medicine","Personal Care","Supplements","Other"];
+function catRank(c){const i=CATORDER.indexOf(c);return i<0?999:i;}
 function products(){ const m=new Map(); for(const r of ROWS){ if(!m.has(r.p)) m.set(r.p,{p:r.p,cat:r.cat}); } return [...m.values()]; }
 function favSet(){ const s=new Set(); for(const r of ROWS){ if(r.fav) s.add(r.p); } return s; }
 // latest price per store: per variant take max-date up, then min across variants
@@ -130,7 +132,7 @@ function cardHTML(p){ const b=best(p.p); const per=baseOf(p.p);
     <div class="price mono">${b.price!=null?fmt(b.price):'–'}<small>${b.price!=null&&per?('/'+per):'no price'}</small></div></div>`;
 }
 function viewList(list,emptyMsg){
-  list.sort((a,b)=>a.cat.localeCompare(b.cat)||a.p.localeCompare(b.p));
+  list.sort((a,b)=>(catRank(a.cat)-catRank(b.cat))||a.p.localeCompare(b.p));
   if(!list.length) return `<div class="empty">${emptyMsg}</div>`;
   let h="",cur=null;
   for(const p of list){ if(p.cat!==cur){h+=`<h2 class="section">${esc(p.cat)}</h2>`;cur=p.cat;} h+=cardHTML(p); }
@@ -147,7 +149,7 @@ function viewStore(){
   let chips=`<div class="chips">`+STORES.map(s=>`<button class="chip ${s===storeSel?'on':''}" onclick="storeSel='${esc(s).replace(/'/g,"\\'")}';render()">${esc(s)}</button>`).join("")+`</div>`;
   // products where this store is the cheapest (best@)
   const wins=[]; for(const p of products()){ const b=best(p.p); if(b.store===storeSel){ wins.push({p:p.p,cat:p.cat,price:b.price,per:baseOf(p.p)}); } }
-  wins.sort((a,b)=>a.cat.localeCompare(b.cat)||a.p.localeCompare(b.p));
+  wins.sort((a,b)=>(catRank(a.cat)-catRank(b.cat))||a.p.localeCompare(b.p));
   let body = wins.length? "" : `<div class="empty">Nothing is cheapest at ${esc(storeSel)} yet.</div>`;
   let cur=null;
   for(const w of wins){ if(w.cat!==cur){body+=`<h2 class="section">${esc(w.cat)}</h2>`;cur=w.cat;}
